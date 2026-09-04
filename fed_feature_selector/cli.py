@@ -3,7 +3,7 @@ Command-Line Interface for FedFeature-Selector: Decentralized Mutual Information
 """
 import argparse
 import csv
-import json
+import os
 import sys
 from .models import FrontierPayload
 from .agents import FedFeatureSelectorCoordinator
@@ -69,22 +69,41 @@ def main(argv=None):
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            rows = list(reader)
+        # Resolve to an absolute path and guard against path traversal /
+        # symlink attacks resolving outside the working directory.
+        in_path = os.path.abspath(args.input)
+        out_path = os.path.abspath(args.output)
+        cwd = os.path.abspath(os.getcwd())
+        if not in_path.startswith(cwd) or not out_path.startswith(cwd):
+            parser.error("input and output paths must reside within the working directory")
+
+        try:
+            with open(in_path, mode="r", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                fieldnames = list(reader.fieldnames or [])
+                rows = list(reader)
+        except FileNotFoundError:
+            parser.error(f"input file not found: {in_path}")
+        except PermissionError:
+            parser.error(f"permission denied reading: {in_path}")
+        except csv.Error as e:
+            parser.error(f"failed to parse CSV: {e}")
 
         out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
         out_rows = []
         for r in rows:
-            payload = FrontierPayload(
-                task_id=r.get("task_id", "TASK-01"),
-                target_identifier=r.get("target_identifier", "TARGET-01"),
-                primary_metric=float(r.get("primary_metric", 15.0)),
-                secondary_metric=float(r.get("secondary_metric", 5.0)),
-                status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
-            )
+            try:
+                payload = FrontierPayload(
+                    task_id=r.get("task_id", "TASK-01"),
+                    target_identifier=r.get("target_identifier", "TARGET-01"),
+                    primary_metric=float(r.get("primary_metric", 15.0)),
+                    secondary_metric=float(r.get("secondary_metric", 5.0)),
+                    status_descriptor=r.get("status_descriptor", "NOMINAL"),
+                    is_critical_flag=str(r.get("is_critical_flag", "")).lower() in ("true", "1", "yes"),
+                )
+            except (ValueError, TypeError) as e:
+                print(f"  [SKIP] row {r}: invalid payload ({e})", file=sys.stderr)
+                continue
             dossier = coordinator.process(payload)
             row_dict = dict(r)
             row_dict["overall_status"] = dossier["overall_status"]
@@ -93,11 +112,14 @@ def main(argv=None):
             row_dict["consensus_summary"] = dossier["consensus_summary"]
             out_rows.append(row_dict)
 
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=out_fields)
-            writer.writeheader()
-            writer.writerows(out_rows)
-        print(f"Processed {len(out_rows)} records -> {args.output}")
+        try:
+            with open(out_path, mode="w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=out_fields)
+                writer.writeheader()
+                writer.writerows(out_rows)
+        except PermissionError:
+            parser.error(f"permission denied writing: {out_path}")
+        print(f"Processed {len(out_rows)} records -> {out_path}")
         return 0
 
     if args.command == "serve":
