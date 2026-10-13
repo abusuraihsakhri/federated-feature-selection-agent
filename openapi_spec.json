@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Federated Feature Selection Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
+    "title": "Federated Feature Selection Agent — Screening API",
+    "description": "Fixed-threshold demonstration and in-memory HMAC audit chain. Not a federated learning, secure-aggregation, or clinically validated system.",
     "version": "3.0.0-ENTERPRISE",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
@@ -15,24 +15,24 @@
         "summary": "Health and metadata check",
         "responses": {
           "200": {
-            "description": "System optimal"
+            "description": "Service metadata"
           }
         }
       }
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "Return in-memory screening counters as JSON",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "JSON operational counters"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
+        "summary": "Evaluate a numeric screening task and record an in-memory HMAC-linked event",
         "requestBody": {
           "content": {
             "application/json": {
@@ -69,14 +69,17 @@
         },
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "Threshold-screening dossier with HMAC audit hash"
+          },
+          "422": {
+            "description": "Payload validation error or detected sensitive identifier"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Return a deterministic mock supervisory response",
         "requestBody": {
           "content": {
             "application/json": {
@@ -103,12 +106,26 @@
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Retrieve in-memory signed event metadata (requires AUDIT_API_TOKEN)",
         "responses": {
           "200": {
-            "description": "Cryptographic audit trail"
+            "description": "Audit-chain metadata and integrity check"
+          },
+          "403": {
+            "description": "Access token missing, incorrect, or not configured"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Value must match the configured AUDIT_API_TOKEN"
+          }
+        ]
       }
     }
   }
