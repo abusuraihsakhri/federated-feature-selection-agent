@@ -39,3 +39,20 @@ jobs:
           path: site
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify live Pages HTML and JavaScript
+        env:
+          LIVE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..20}; do
+            if curl --fail --location --silent --show-error "$LIVE_URL" -o /tmp/fed-pages.html \
+               && grep -q "Local Screening Demo" /tmp/fed-pages.html \
+               && curl --fail --location --silent --show-error "${LIVE_URL%/}/app.js" -o /tmp/fed-pages-app.js \
+               && grep -q "function evaluateTask" /tmp/fed-pages-app.js; then
+              echo "Deployed HTML and JavaScript are accessible"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Pages assets were not accessible after deployment" >&2
+          exit 1
