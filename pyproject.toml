@@ -1,17 +1,16 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "federated-feature-selection-engine"
+name = "federated-feature-selection-agent"
 version = "2.0.0"
 description = "FedFeature-Selector: Decentralized Mutual Information & Lasso Screening Engine"
 readme = "README.md"
 authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
-license = { text = "MIT" }
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Security/Cryptography",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -19,9 +18,17 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = []
 
+[project.optional-dependencies]
+server = ["pydantic>=2,<3", "fastapi>=0.110,<1", "uvicorn>=0.29,<1"]
+test = ["pytest>=8,<10"]
+
 [project.scripts]
 federated-feature-selection-engine = "fed_feature_selector.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/abusuraihsakhri/federated-feature-selection-engine"
-Repository = "https://github.com/abusuraihsakhri/federated-feature-selection-engine.git"
+Homepage = "https://github.com/abusuraihsakhri/federated-feature-selection-agent"
+Repository = "https://github.com/abusuraihsakhri/federated-feature-selection-agent.git"
+
+[tool.setuptools]
+packages = ["agents", "fed_feature_selector"]
+py-modules = ["cli", "enrichment", "simulator", "fed_feature_selector_app"]

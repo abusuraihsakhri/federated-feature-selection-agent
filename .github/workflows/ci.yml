@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
+        pip install -e ".[server,test]"
 
     - name: Run Pytest Suite
       run: |
@@ -38,3 +38,45 @@ jobs:
         assert AuditLogger.verify_integrity() is True
         print('Security & Zero-PHI Audit Passed!')
         "
+
+    - name: Compile and run CLI smoke tests
+      run: |
+        python -m compileall -q agents fed_feature_selector cli.py enrichment.py simulator.py
+        python cli.py audit --task-id CI-01 --target SYNTHETIC-01 --primary 26 --secondary 3
+        python cli.py batch -i sample.csv -o results.csv
+        python -c "from agents.api import health; assert health()['status'] == 'HEALTHY'"
+
+    - name: Audit installed dependencies
+      if: matrix.python-version == '3.12'
+      run: |
+        python -m pip install pip-audit
+        pip-audit
+
+    - name: Set up Node.js for browser tests
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Check browser script and screening logic
+      run: |
+        node --check web/app.js
+        node --test web/app.test.cjs
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build container
+        run: docker build -t federated-feature-selection-agent:ci .
+      - name: Check container health endpoint
+        run: |
+          docker run -d --name screening-ci -p 127.0.0.1:18000:8000 -e AUDIT_SECRET_KEY=ci-test-key -e AUDIT_API_TOKEN=ci-test-api-token federated-feature-selection-agent:ci
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:18000/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs screening-ci
+          exit 1
+      - name: Stop container
+        if: always()
+        run: docker rm -f screening-ci || true

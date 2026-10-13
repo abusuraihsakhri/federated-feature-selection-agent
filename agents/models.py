@@ -26,8 +26,8 @@ class SystemTaskPayload(BaseModel):
 
     task_id: str = Field(..., max_length=128, description="Unique task / case identifier")
     target_identifier: str = Field(..., max_length=128, description="Entity, patient key, or genomic/cryptographic target")
-    primary_metric: float = Field(..., description="Primary domain measurement or score")
-    secondary_metric: float = Field(default=0.0, description="Secondary kinetic or confidence score")
+    primary_metric: float = Field(..., allow_inf_nan=False, description="Primary domain measurement or score")
+    secondary_metric: float = Field(default=0.0, allow_inf_nan=False, description="Secondary kinetic or confidence score")
     status_descriptor: str = Field(default="NOMINAL", max_length=128, description="Status code or phenotype descriptor")
     is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
@@ -36,7 +36,7 @@ class SystemTaskPayload(BaseModel):
     @field_validator("task_id", "target_identifier", "status_descriptor")
     @classmethod
     def _reject_control_chars(cls, v: str) -> str:
-        if any(ord(c) < 32 and c not in "\t\n\r" for c in v):
+        if any(ord(c) < 32 or ord(c) == 127 for c in v):
             raise ValueError("Field must not contain control characters")
         return v
 

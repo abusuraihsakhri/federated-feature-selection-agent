@@ -1,158 +1,87 @@
 # Federated Feature Selection Agent
 
-> **Domain:** Privacy-Preserving Healthcare & Federated Computing
-> **Reference Guidelines & Standards:** `HIPAA Safe Harbor §164.514 & Differential Privacy RDP`
+A Python task-screening prototype with a standalone browser demonstration. The current implementations evaluate **fixed numeric thresholds and status keywords**; they do not calculate mutual information, fit Lasso models, coordinate federated sites, apply differential privacy, or implement secure aggregation.
 
-<div align="center">
+## Browser demonstration
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+Open `web/index.html` locally in a modern browser. The page works without a Python server or external dependencies. It evaluates synthetic tasks using the same threshold and priority rules as `agents/workers.py`, displays a JSON result, and can export that result.
 
-</div>
+- Primary metric **> 25**: elevated alert.
+- Secondary metric **> 12**: elevated alert; a critical flag raises the urgency to critical.
+- Status containing **DISCORDANT, ANOMALY, MUTANT, VIOLATION, FAIL, or REJECT**: elevated alert.
+- The final urgency is the highest observed alert tier.
 
----
+The browser page does **not** generate HMAC signatures, create persistent audit logs, send task data to an API, or process files on a server. Do not enter real patient identifiers or protected health information.
 
-## 📖 What It Does
+## Python workflows
 
-**Federated Feature Selection Agent** is an analytical and computational platform implementing decentralized mutual information & Lasso multi-omics biomarker ranking across distributed worker agents. Task payloads are evaluated by specialized workers that check metric thresholds, safety boundaries, and protocol conformance, then aggregated into a cryptographically signed consensus dossier.
+Two related implementations are included:
 
----
+| Location | Purpose |
+| --- | --- |
+| `agents/`, `cli.py` | Pydantic-validated task screening, worker alerts, in-memory HMAC-linked audit trail, and FastAPI service |
+| `fed_feature_selector/` | Separate dataclass-based threshold-screening coordinator and command-line interface |
+| `enrichment.py` | Generic threshold evaluations under eight feature names; not functional cryptographic or differential-privacy implementations |
+| `simulator.py` | Synthetic task load simulation |
+| `web/` | Standalone local browser screening demo and Node.js unit tests |
 
-## ⚙️ Architecture
+### Installation
 
-The project contains two coordinated subsystems:
+Use Python 3.10–3.12 (the versions exercised in CI):
 
-| Package | Role |
-|:--------|:-----|
-| `agents/` | Core platform — Pydantic models, supervisor orchestrator, specialized workers, PHI guard, HMAC-SHA256 audit trail, FastAPI REST server |
-| `fed_feature_selector/` | Frontier engine — dataclass models, domain engine, sub-agent coordinator, alternate CLI/serve entry points |
-| `enrichment.py` | Eight domain-specific enrichment engines (secure aggregation, DP budget monitoring, Byzantine resilience, cross-silo selection, privacy-utility visualization, feature compression, HIPAA/GDPR audit, Renyi DP composition) |
-| `simulator.py` | High-throughput stress-testing simulator with adversarial PHI injection |
-| `web/index.html` | Browser-based operations console |
-
-### Key Modules
-
-- **`agents/supervisor.py`** — `SystemSupervisor` orchestrates worker evaluations and builds consensus dossiers
-- **`agents/workers.py`** — `InvariantQCWorker`, `SafetyEscalationWorker`, `ProtocolConformanceWorker`
-- **`agents/base.py`** — `PHIGuard` (PHI outbound interceptor), `AuditTrail` / `AuditLogger` (HMAC-SHA256 tamper-evident logs)
-- **`agents/models.py`** — Pydantic v2 schemas with input validation
-- **`agents/api.py`** — FastAPI REST endpoints
-- **`cli.py`** — Primary CLI entry point (`audit`, `chat`, `batch`, `verify-audit`, `serve`)
-
----
-
-## 💻 Quickstart
-
-### Prerequisites
-- Python 3.10, 3.11, or 3.12
-- No required runtime dependencies (FastAPI/uvicorn/pydantic/pytest optional for server & tests)
-
-### Install
 ```bash
-pip install fastapi uvicorn pydantic pytest
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[server,test]"
 ```
 
-### 1. Guided Interactive Audit
-```bash
-python cli.py audit
-python cli.py audit --task-id TASK-01 --target KEY-01 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
-```
+Run the primary CLI:
 
-### 2. Supervisory Chat
 ```bash
-python cli.py chat "What standard is applied?"
-```
-
-### 3. Batch CSV Processing
-```bash
+python cli.py audit --task-id TASK-01 --target SYNTHETIC-01 --primary 28.5 --secondary 14.2 --status DISCORDANT
+python cli.py chat "What is the current rule set?"
 python cli.py batch -i sample.csv -o results.csv
+python simulator.py 100
 ```
 
-### 4. Verify Audit Trail Integrity
-```bash
-python cli.py verify-audit
-```
+The separate installed command `federated-feature-selection-engine` uses `fed_feature_selector.cli`; its status codes and thresholds differ from the primary CLI. Batch input/output paths must remain inside the current working directory, including after resolving symbolic links. Rejected rows are skipped.
 
-### 5. Launch REST Server
+### FastAPI service
+
 ```bash
+export AUDIT_SECRET_KEY="set-a-random-private-signing-key"
+export AUDIT_API_TOKEN="set-a-separate-random-api-token"
 python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-### Input Data Schema
+Endpoints: `GET /health`, `GET /metrics`, `POST /api/audit`, `POST /api/chat`, and `GET /api/audit/logs`. Interactive OpenAPI documentation is available at `/docs`. The audit-logs endpoint requires an `X-API-Key` header matching `AUDIT_API_TOKEN`; it is disabled when that variable is unset.
 
-| Field | Type | Description | Requirement |
-|:------|:-----|:------------|:------------|
-| `task_id` | string (max 128 chars) | Unique task / case identifier | Required |
-| `target_identifier` | string (max 128 chars) | Entity, patient key, or target | Required |
-| `primary_metric` | float | Primary domain measurement or score | Required |
-| `secondary_metric` | float | Secondary kinetic or confidence score | Optional (default 0.0) |
-| `is_critical_flag` | bool | Emergency escalation trigger | Optional (default false) |
-| `status_descriptor` | string (max 128 chars) | Status code or phenotype descriptor | Optional (default "NOMINAL") |
+`AUDIT_SECRET_KEY` is used for in-memory HMAC audit entries. Without it, the process generates an ephemeral random key, and signatures cannot be verified across restarts. The audit history is **not persisted**; running `verify-audit` in a new CLI process does not recover a previous process's history. No authentication is configured for task-submission endpoints, so keep the service on localhost or behind trusted access controls; do not expose it directly to the internet.
 
----
+The model-provider factory currently returns a deterministic mock for **all** provider names. It does not contact external language-model services and its responses are not expert verification.
 
-## 🛡️ Security Architecture
+### Containers
 
-* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, email addresses, DOBs, and patient identifiers. Raises `SecurityException` on detection.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation. `verify_integrity()` checks **both** chain linkage **and** the HMAC signature of each entry (detects tampering with signatures, chain links, or payload hashes).
-* **Input Validation:** All string fields are length-capped (128 chars), whitespace-stripped, and reject embedded control characters.
-* **Batch Path Safety:** The `batch` command resolves paths to absolute form and rejects any input or output path that escapes the working directory.
-* **No Hardcoded Secrets:** The audit key is read from the `AUDIT_SECRET_KEY` environment variable. If unset, a random ephemeral key is generated per session (with a logged warning) — no static default is embedded in source.
+```bash
+AUDIT_SECRET_KEY="set-a-private-key" AUDIT_API_TOKEN="set-a-separate-token" docker compose up --build
+```
 
-### Environment Variables
+Compose binds the API to `127.0.0.1:8000` on the host. The Docker image excludes local secret files through `.dockerignore`. Explicitly publishing the container beyond localhost requires separate authentication and transport-security controls.
 
-| Variable | Purpose | Required |
-|:---------|:--------|:---------|
-| `AUDIT_SECRET_KEY` | HMAC signing key for the audit trail | Recommended (random key generated if absent) |
-| `MODEL_PROVIDER` | LLM provider selection (`mock`, `ollama`, `claude`, `openai`) | No (default `mock`) |
-
----
-
-## 🧪 Testing & Verification
-
-Run the full automated test suite:
+## Verification
 
 ```bash
 pytest -v
+node --check web/app.js
+node --test web/app.test.cjs
 ```
 
-This runs 24 tests covering:
-- PHI guard enforcement and email-regex correctness
-- Audit-trail HMAC signature verification and tamper detection
-- Payload input validation (length limits, control-character rejection, whitespace stripping)
-- Batch CLI path-traversal guards and error handling
-- Worker evaluations, supervisor consensus, and CLI commands
-- Enrichment engine thresholds and suite execution
+GitHub Actions runs Python tests on 3.10, 3.11 and 3.12 plus browser-logic tests on Node.js. The static site can be hosted on GitHub Pages without a Python runtime. The FastAPI service and HMAC audit trail require Python and cannot run on GitHub Pages.
 
-Execute high-throughput batch simulation benchmarks:
+## Privacy and limitations
 
-```bash
-python simulator.py 1000
-```
+The Python guard scans for a limited set of identifiable text patterns, including recursively nested task metadata. **Regex screening is not de-identification**, and neither it nor an HMAC signature constitutes HIPAA/GDPR certification. Python task and audit data are held in process memory; the browser demo keeps results in its current page session and exports only on user action. Do not use these example screening thresholds for clinical decisions or interpret the code as validated federated feature-selection methodology.
 
----
+## License
 
-## 🐳 Container Deployment
-
-```bash
-docker build -t federated-feature-selection-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=<your-secret> federated-feature-selection-agent
-```
-
-Or with Docker Compose:
-
-```bash
-AUDIT_SECRET_KEY=<your-secret> docker compose up
-```
-
-> **Important:** Always set `AUDIT_SECRET_KEY` in production. Without it the container generates a random ephemeral key, meaning audit signatures will not survive a restart.
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
