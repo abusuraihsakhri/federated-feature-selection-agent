@@ -71,10 +71,10 @@ def main(argv=None):
     if args.command == "batch":
         # Resolve to an absolute path and guard against path traversal /
         # symlink attacks resolving outside the working directory.
-        in_path = os.path.abspath(args.input)
-        out_path = os.path.abspath(args.output)
-        cwd = os.path.abspath(os.getcwd())
-        if not in_path.startswith(cwd) or not out_path.startswith(cwd):
+        in_path = os.path.realpath(args.input)
+        out_path = os.path.realpath(args.output)
+        cwd = os.path.realpath(os.getcwd())
+        if os.path.commonpath([cwd, in_path]) != cwd or os.path.commonpath([cwd, out_path]) != cwd:
             parser.error("input and output paths must reside within the working directory")
 
         try:
@@ -89,9 +89,9 @@ def main(argv=None):
         except csv.Error as e:
             parser.error(f"failed to parse CSV: {e}")
 
-        out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]))
         out_rows = []
-        for r in rows:
+        for row_number, r in enumerate(rows, start=2):
             try:
                 payload = FrontierPayload(
                     task_id=r.get("task_id", "TASK-01"),
@@ -101,10 +101,10 @@ def main(argv=None):
                     status_descriptor=r.get("status_descriptor", "NOMINAL"),
                     is_critical_flag=str(r.get("is_critical_flag", "")).lower() in ("true", "1", "yes"),
                 )
-            except (ValueError, TypeError) as e:
-                print(f"  [SKIP] row {r}: invalid payload ({e})", file=sys.stderr)
+                dossier = coordinator.process(payload)
+            except (ValueError, TypeError):
+                print(f"  [SKIP] row {row_number}: invalid payload", file=sys.stderr)
                 continue
-            dossier = coordinator.process(payload)
             row_dict = dict(r)
             row_dict["overall_status"] = dossier["overall_status"]
             row_dict["total_alerts"] = dossier["total_alerts"]
