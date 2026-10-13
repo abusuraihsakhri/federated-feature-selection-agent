@@ -1,236 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Federated Feature Selection Engine — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Federated Feature Selection — Local Screening Demo</title>
+  <style>
+    :root { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color-scheme:dark; --bg:#0b1020; --panel:#151d30; --line:#334155; --text:#f1f5f9; --muted:#bac7d6; --accent:#80b6ff; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); line-height:1.5; }
+    .shell { max-width:1120px; margin:0 auto; padding:clamp(16px,3vw,36px); }
+    h1,h2,p { margin-top:0; }
+    h1 { font-size:clamp(1.65rem,3vw,2.35rem); line-height:1.2; letter-spacing:-.025em; margin-bottom:.65rem; }
+    h2 { font-size:1.13rem; margin-bottom:1.1rem; }
+    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.13em; font-size:.75rem; font-weight:750; margin-bottom:.6rem; }
+    .intro { color:var(--muted); max-width:75ch; }
+    .notice { margin:1.5rem 0; padding:1rem 1.15rem; border:1px solid #547091; background:#18263d; border-radius:10px; color:#e6f0fc; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:1.5rem 0; }
+    .metric,.panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+    .metric { padding:15px 18px; }
+    .metric span { display:block; font-size:.8rem; color:var(--muted); }
+    .metric strong { font-variant-numeric:tabular-nums; display:block; font-size:1.4rem; margin-top:.25rem; }
+    .workspace { display:grid; grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr); gap:16px; align-items:start; }
+    .panel { padding:clamp(16px,2.5vw,24px); min-width:0; }
+    .fields { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+    .field.wide { grid-column:1/-1; }
+    label { display:block; font-size:.84rem; color:#dbeafe; font-weight:600; margin-bottom:5px; }
+    input:not([type="checkbox"]),select { width:100%; background:#0e1729; color:var(--text); border:1px solid #53627c; border-radius:7px; padding:10px 12px; min-height:43px; font:inherit; }
+    input:focus-visible,button:focus-visible { outline:3px solid #7db6ff; outline-offset:2px; }
+    .check { display:flex; align-items:center; gap:10px; margin:18px 0; }
+    .check input { width:18px; height:18px; accent-color:var(--accent); }
+    .check label { margin:0; }
+    button { border:1px solid #90c2ff; background:#286bc3; color:white; border-radius:8px; padding:11px 16px; cursor:pointer; font:inherit; font-weight:650; }
+    button:hover:not(:disabled) { background:#337ddf; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+    .secondary { background:transparent; }
+    #resultStatus { color:var(--muted); margin-bottom:12px; min-height:1.5em; }
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; color:#b2f7d1; font: .82rem/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; background:#090f1c; border:1px solid #293851; border-radius:8px; padding:16px; min-height:330px; max-height:650px; overflow:auto; }
+    .footnote { margin:1rem 0 0; color:var(--muted); font-size:.81rem; }
+    a { color:#b4d6ff; }
+    @media(max-width:760px) { .workspace { grid-template-columns:1fr; } }
+    @media(max-width:480px) { .metrics { grid-template-columns:1fr; } .fields { grid-template-columns:1fr; } }
+  </style>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Federated Feature Selection Engine</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+<main class="shell">
+  <header>
+    <p class="eyebrow">Local browser demonstration · deterministic rules</p>
+    <h1>Federated Feature Selection — Screening Demo</h1>
+    <p class="intro">Try the threshold-and-status screening rules implemented in the repository's Python supervisor. This demo does <strong>not</strong> perform federated learning, mutual-information estimation, Lasso feature selection, differential privacy, or clinical validation.</p>
+  </header>
+  <aside class="notice"><strong>Privacy:</strong> Computation occurs in this browser; inputs are not uploaded by this page. Use synthetic or non-identifiable data only. This demonstration is not a PHI de-identification tool and provides no regulatory compliance guarantee.</aside>
+  <section class="metrics" aria-label="Local session statistics">
+    <div class="metric"><span>Tasks processed this session</span><strong id="taskCount">0</strong></div>
+    <div class="metric"><span>Alerts generated this session</span><strong id="alertCount">0</strong></div>
+    <div class="metric"><span>Audit signatures generated</span><strong>None</strong></div>
+  </section>
+  <div class="workspace">
+    <section class="panel" aria-labelledby="formTitle">
+      <h2 id="formTitle">Evaluate synthetic task</h2>
+      <form id="auditForm">
+        <div class="fields">
+          <div class="field"><label for="task_id">Task ID</label><input id="task_id" maxlength="128" required value="TASK-DEMO-001"></div>
+          <div class="field"><label for="target_id">Target identifier</label><input id="target_id" maxlength="128" required value="SYNTHETIC-001"></div>
+          <div class="field"><label for="primary_metric">Primary metric</label><input id="primary_metric" type="number" step="any" required value="29.4"></div>
+          <div class="field"><label for="secondary_metric">Secondary metric</label><input id="secondary_metric" type="number" step="any" required value="14.8"></div>
+          <div class="field wide"><label for="status_descriptor">Status descriptor</label><input id="status_descriptor" maxlength="128" required value="DISCORDANT_ANOMALY"></div>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Federated Feature Selection Engine Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "federated-feature-selection-engine",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+        <div class="check"><input type="checkbox" id="is_critical" checked><label for="is_critical">Critical flag</label></div>
+        <button type="submit">Evaluate task</button>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="resultTitle">
+      <h2 id="resultTitle">Screening result</h2>
+      <p id="resultStatus" role="status" aria-live="polite">No task evaluated yet.</p>
+      <pre id="outputConsole" aria-label="Screening JSON result">Submit a synthetic task to view the local result.</pre>
+      <div class="actions">
+        <button id="downloadReport" class="secondary" type="button" disabled>Export JSON</button>
+        <button id="clearReport" class="secondary" type="button">Clear result</button>
+      </div>
+      <p class="footnote">Rule thresholds: primary &gt; 25; secondary &gt; 12; critical flag or matching anomaly descriptors trigger alerts. Results are illustrative only; no HMAC or server-side audit record is created. <a href="https://github.com/abusuraihsakhri/federated-feature-selection-agent">Source repository</a>.</p>
+    </section>
+  </div>
+</main>
+<script src="./app.js" defer></script>
 </body>
 </html>
