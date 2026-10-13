@@ -1,5 +1,7 @@
 # Federated Feature Selection Agent
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/federated-feature-selection-agent/)
+
 A Python task-screening prototype with a standalone browser demonstration. The current implementations evaluate **fixed numeric thresholds and status keywords**; they do not calculate mutual information, fit Lasso models, coordinate federated sites, apply differential privacy, or implement secure aggregation.
 
 ## Browser demonstration
