@@ -4,7 +4,7 @@
 function evaluateTask(payload) {
   for (const name of ["task_id", "target_identifier", "status_descriptor"]) {
     if (typeof payload[name] !== "string" || !payload[name].trim() ||
-        payload[name].length > 128 || /[\\x00-\\x1f\\x7f]/.test(payload[name])) {
+        payload[name].length > 128 || /[\x00-\x1f\x7f]/.test(payload[name])) {
       throw new Error(name + " must be a non-empty string of at most 128 characters without control characters");
     }
   }
